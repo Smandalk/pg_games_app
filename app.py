@@ -1,46 +1,47 @@
-from flask import Flask, render_template
-from flask_socketio import SocketIO, emit, join_room
-import random, os
+from flask import Flask, render_template, request
+from flask_socketio import SocketIO, join_room, emit
+import random
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app)
 
-# Keep track of room hosts
-room_hosts = {}
+# Room state: host + last_number
+rooms = {}
 
-@app.route('/game/<room>')
+@app.route("/game/<room>")
 def game(room):
-    return render_template('index.html', room=room)
+    return render_template("index.html", room=room)
 
-@socketio.on('join')
+@socketio.on("join")
 def handle_join(data):
-    room = data['room']
-    sid = data['sid']  # unique socket id of client
-
+    room = data["room"]
+    sid = request.sid   # server knows unique socket id
     join_room(room)
 
-    # If no host assigned yet, this player becomes the host
-    if room not in room_hosts:
-        room_hosts[room] = sid
-        emit('host_status', {'is_host': True})
-        emit('message', {'msg': f"You are the host of room {room}"}, to=sid)
-    else:
-        emit('host_status', {'is_host': False})
-        emit('message', {'msg': f"Joined room {room}"}, to=sid)
+    # initialize room if new
+    if room not in rooms:
+        rooms[room] = {"host": sid, "last_number": None}
 
-@socketio.on('generate_number')
-def handle_generate_number(data):
-    room = data['room']
-    sid = data['sid']
+    is_host = (rooms[room]["host"] == sid)
 
-    # Only host can generate
-    if room_hosts.get(room) == sid:
+    # tell this client their role
+    emit("host_status", {"is_host": is_host}, room=sid)
+    emit("message", {"msg": f"A new player joined room {room}"}, room=room)
+
+    # if there’s already a number, send it immediately to the new player
+    if rooms[room]["last_number"] is not None:
+        emit("new_number", {"number": rooms[room]["last_number"]}, room=sid)
+
+@socketio.on("generate_number")
+def handle_generate(data):
+    room = data["room"]
+    sid = request.sid
+
+    # Only the host can generate
+    if rooms[room]["host"] == sid:
         number = random.randint(1, 100)
-        emit('new_number', {'number': number}, room=room)
-    else:
-        emit('message', {'msg': "Only the host can generate numbers!"}, to=sid)
+        rooms[room]["last_number"] = number   # save latest number
+        emit("new_number", {"number": number}, room=room)
 
-if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
-    socketio.run(app, host='0.0.0.0', port=port)
+if __name__ == "__main__":
+    socketio.run(app, host="0.0.0.0", port=5000)
