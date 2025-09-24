@@ -6,6 +6,7 @@ app = Flask(_name_)
 app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app)
 
+
 @app.route('/game/<room>')
 def game(room):
     return render_template('index.html', room=room)
@@ -22,6 +23,7 @@ def handle_generate_number(data):
     number = random.randint(1, 100)
     emit('new_number', {'number': number}, room=room)
 
-if _name_ == '_main_':
+if _name_ == '__main__':
     port = int(os.environ.get("PORT", 5000))
+
     socketio.run(app, host='0.0.0.0', port=port)
