@@ -23,8 +23,9 @@ def handle_generate_number(data):
     number = random.randint(1, 100)
     emit('new_number', {'number': number}, room=room)
 
-if _name_ == '__main__':
+if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
 
     socketio.run(app, host='0.0.0.0', port=port)
+
 
