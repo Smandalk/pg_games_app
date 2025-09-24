@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Multiplayer RNG</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+</head>
+<body>
+    <h2>🎲 Multiplayer RNG</h2>
+    <p id="room-info"></p>
+    <button onclick="generateNumber()">Generate Number</button>
+    <p id="result">Waiting for number...</p>
+    <p id="status"></p>
+
+    <script>
+        var socket = io();
+        var room = "{{ room }}";
+
+        // Join the room when connected
+        socket.on('connect', function() {
+            socket.emit('join', {room: room});
+            document.getElementById("room-info").innerText = "Room: " + room;
+        });
+
+        function generateNumber() {
+            socket.emit('generate_number', {room: room});
+        }
+
+        socket.on('new_number', function(data) {
+            document.getElementById("result").innerText = "Number: " + data.number;
+        });
+
+        socket.on('message', function(data) {
+            document.getElementById("status").innerText = data.msg;
+        });
+    </script>
+</body>
+</html>
