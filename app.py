@@ -2,7 +2,7 @@ from flask import Flask, render_template
 from flask_socketio import SocketIO, emit, join_room
 import random, os
 
-app = Flask(_name_)
+app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app)
 
@@ -27,3 +27,4 @@ if _name_ == '__main__':
     port = int(os.environ.get("PORT", 5000))
 
     socketio.run(app, host='0.0.0.0', port=port)
+
